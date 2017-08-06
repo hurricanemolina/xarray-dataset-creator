@@ -1,0 +1,103 @@
+#!/usr/bin/env python2
+
+"""
+Python Script Created on Thu Jul 19 01:05:10 2017
+
+Python Script Author:
+
+Maria J. Molina
+Ph.D. Student
+Central Michigan University
+
+"""
+
+######################################################################################
+######################################################################################
+######################################################################################
+
+import pandas as pd
+import xarray as xr
+import numpy as np
+
+######################################################################################
+######################GENERATE DATASETS###############################################
+######################################################################################
+
+
+variables = np.array(['temp2m','dewp2m','sblcl','conprec3','mslp'],dtype=object)
+
+years_total = np.arange(1980,2017,1)
+
+
+for v in variables:
+
+    parameter = v
+
+    for b in years_total:
+    
+        year_to_create = str(b)
+
+        time = pd.date_range(year_to_create+'-01-01 00:00:00',year_to_create+'-12-31 21:00:00',freq='3H')
+
+        years = np.zeros(len(time),dtype=object)
+        months = np.zeros(len(time),dtype=object)
+        days = np.zeros(len(time),dtype=object)
+        hours = np.zeros(len(time),dtype=object)
+    
+        for k, date in enumerate(time):
+        
+            years[k] = date.strftime("%Y")
+            months[k] = date.strftime("%m")    
+            days[k] = date.strftime("%d")    
+            hours[k] = date.strftime("%H%M")
+
+        init_year = years[0]
+        init_month = months[0]
+        init_day = days[0]
+        init_hour = hours[0]
+        
+        sec_year = years[1]
+        sec_month = months[1]
+        sec_day = days[1]
+        sec_hour = hours[1]
+
+        for y, m, d, h in zip(years, months, days, hours):
+    
+            if y == init_year and m == init_month and d == init_day and h == init_hour:
+                search_name = '/storage/Reanalysis_Processed/NARR_Victor/narr_conv_'+y+m+d+'_'+h+'.nc'
+                init_data = xr.open_dataset(search_name, decode_cf=False)
+                study_data = xr.DataArray(init_data[parameter], dims=['lat','lon'])
+                lat_values = init_data['lats'].values
+                lon_values = init_data['lons'].values
+                init_data.close()
+
+            elif y == sec_year and m == sec_month and d == sec_day and h == sec_hour:
+                search_name = '/storage/Reanalysis_Processed/NARR_Victor/narr_conv_'+y+m+d+'_'+h+'.nc'
+                init_data = xr.open_dataset(search_name, decode_cf=False)          
+                study_data_two = xr.DataArray(init_data[parameter], dims=['lat','lon'])
+                init_data.close()
+                study_data_merged = xr.concat([study_data, study_data_two], dim=('T'))
+            
+            else:
+                search_name = '/storage/Reanalysis_Processed/NARR_Victor/narr_conv_'+y+m+d+'_'+h+'.nc'
+                init_data = xr.open_dataset(search_name, decode_cf=False) 
+                more_data = xr.DataArray(init_data[parameter], dims=['lat','lon'])
+                init_data.close()
+                study_data_merged = xr.concat([study_data_merged, more_data], dim=('T'))
+            
+                print str(len(study_data_merged['T']))+' file out of '+str(len(time))+' for '+str(b)+' for '+parameter
+        
+                      
+        data = xr.Dataset({parameter:(['time','y','x'],study_data_merged.values)}, \
+                           coords={'time':time, \
+                           'lats':(['y','x'],lat_values), \
+                           'lons':(['y','x'],lon_values)}) 
+        
+        
+        filename = parameter+'_'+year_to_create
+        data.to_netcdf(path='/storage/timme1mj/NARR/jclimate/'+filename)
+            
+
+######################################################################################
+######################################################################################
+######################################################################################
