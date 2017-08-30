@@ -50,20 +50,11 @@ for v in variables:
             months[k] = date.strftime("%m")    
             days[k] = date.strftime("%d")    
             hours[k] = date.strftime("%H%M")
-
-        init_year = years[0]
-        init_month = months[0]
-        init_day = days[0]
-        init_hour = hours[0]
-        
-        sec_year = years[1]
-        sec_month = months[1]
-        sec_day = days[1]
-        sec_hour = hours[1]
+    
 
         for y, m, d, h in zip(years, months, days, hours):
     
-            if y == init_year and m == init_month and d == init_day and h == init_hour:
+            if y == years[0] and m == months[0] and d == days[0] and h == hours[0]:
                 search_name = '/storage/Reanalysis_Processed/NARR_Victor/narr_conv_'+y+m+d+'_'+h+'.nc'
                 init_data = xr.open_dataset(search_name, decode_cf=False)
                 study_data = xr.DataArray(init_data[parameter], dims=['lat','lon'])
@@ -71,7 +62,7 @@ for v in variables:
                 lon_values = init_data['lons'].values
                 init_data.close()
 
-            elif y == sec_year and m == sec_month and d == sec_day and h == sec_hour:
+            elif y == years[1] and m == months[1] and d == days[1] and h == hours[1]:
                 search_name = '/storage/Reanalysis_Processed/NARR_Victor/narr_conv_'+y+m+d+'_'+h+'.nc'
                 init_data = xr.open_dataset(search_name, decode_cf=False)          
                 study_data_two = xr.DataArray(init_data[parameter], dims=['lat','lon'])
@@ -91,7 +82,8 @@ for v in variables:
         data = xr.Dataset({parameter:(['time','y','x'],study_data_merged.values)}, \
                            coords={'time':time, \
                            'lats':(['y','x'],lat_values), \
-                           'lons':(['y','x'],lon_values)}) 
+                           'lons':(['y','x'],lon_values)},\
+                           attrs={'File Contents':'NARR Convective Parameters.'}) 
         
         
         filename = parameter+'_'+year_to_create
